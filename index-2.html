@@ -11,10 +11,12 @@
    全局变量：如需换配色，只改这里即可
    ============================================================ */
 :root{
-  --red:        #8B1A1A;   /* 主色：深红 */
-  --red-soft:   #A83232;   /* 深红浅一点的辅助色 */
-  --gold:       #C9A96E;   /* 点缀：金色 */
-  --gold-light: #E3D2AE;   /* 浅金 */
+  /* 【配色微调】主色由 #8B1A1A 压深一档，更沉稳、更接近传统柬帖红
+     想更亮回一点可改回 #7A1414 / #8B1A1A */
+  --red:        #6E1010;   /* 主色：深红（更沉稳） */
+  --red-soft:   #8E1E1E;   /* 深红浅一点的辅助色（按钮渐变上沿） */
+  --gold:       #CBAF7A;   /* 点缀：金色（随主色一并对齐提亮） */
+  --gold-light: #E4D3B0;   /* 浅金 */
   --paper:      #FBF7F0;   /* 内容卡片：米白 */
   --paper-deep: #EFE7DA;   /* 页面底色：稍深的米色，形成卡片感 */
   --ink:        #3A3632;   /* 正文：深灰 */
@@ -147,7 +149,7 @@ body{
   opacity:.9;
 }
 
-/* 主标题 */
+/* 主标题：外层只负责排版，逐字动画交给内部 span */
 .cover-title{
   font-family:var(--font-title);
   font-size:clamp(44px, 14.5vw, 62px);
@@ -157,6 +159,78 @@ body{
   font-weight:400;
   line-height:1.25;
   text-shadow:0 1px 0 rgba(255,255,255,.9), 0 3px 12px rgba(139,26,26,.10);
+  white-space:nowrap;             /* 四字标题不折行 */
+}
+
+/* ------------------------------------------------------------
+   封面逐字浮现 + 墨迹晕开
+   每个字一个 <i>，通过内联 --i 控制 animation-delay（纯 CSS，无 JS）
+   ------------------------------------------------------------ */
+.cover-title i{
+  display:inline-block;
+  font-style:normal;
+  /* 起始：透明、下移、轻微放大 + 模糊，模拟墨迹晕开 */
+  opacity:0;
+  filter:blur(9px);
+  transform:translateY(14px) scale(1.14);
+  animation:inkIn 1.05s cubic-bezier(.22,.68,.32,1) forwards;
+  /* --i 由 HTML 内联指定，从 0 开始 */
+  animation-delay:calc(.18s + var(--i, 0) * .17s + .25s);
+}
+
+@keyframes inkIn{
+  0%{
+    opacity:0;
+    filter:blur(9px);
+    transform:translateY(14px) scale(1.14);
+    text-shadow:0 0 0 rgba(110,16,16,0);
+  }
+  55%{
+    opacity:.92;
+    filter:blur(1.2px);
+    transform:translateY(0) scale(1.015);
+  }
+  100%{
+    opacity:1;
+    filter:blur(0);
+    transform:translateY(0) scale(1);
+    text-shadow:0 1px 0 rgba(255,255,255,.9), 0 3px 12px rgba(110,16,16,.10);
+  }
+}
+
+/* 封面其余元素：随标题之后依次淡入上移 */
+.cover-seal,
+.cover-title-rule,
+.cover-sub,
+.cover-date,
+.cover-actions{
+  opacity:0;
+  animation:fadeUpIn .9s cubic-bezier(.22,.68,.32,1) forwards;
+}
+.cover-seal       { animation-delay:.10s; }
+.cover-title-rule { animation-delay:1.05s; }
+.cover-sub        { animation-delay:1.20s; }
+.cover-date       { animation-delay:1.34s; }
+.cover-actions    { animation-delay:1.50s; }
+
+@keyframes fadeUpIn{
+  from{ opacity:0; transform:translateY(12px); }
+  to  { opacity:1; transform:translateY(0);    }
+}
+
+/* 尊重系统「减弱动态效果」设置：关闭所有进场动画，直接显示 */
+@media (prefers-reduced-motion: reduce){
+  .cover-title i,
+  .cover-seal,
+  .cover-title-rule,
+  .cover-sub,
+  .cover-date,
+  .cover-actions{
+    animation:none !important;
+    opacity:1 !important;
+    filter:none !important;
+    transform:none !important;
+  }
 }
 
 /* 标题下的短金线 */
@@ -271,25 +345,52 @@ body{
 }
 .letter-body p + p{ margin-top:12px; }
 
-/* 恭请一行（不缩进、居中、略突出） */
+/* 恭请一行：独立突出，视觉层级高于正文 */
 .letter-honor{
-  margin-top:26px;
+  margin-top:34px !important;
+  margin-bottom:26px !important;
   text-indent:0 !important;
   text-align:center;
-  font-size:17px;
+  font-family:var(--font-title);
+  font-size:20px;               /* 比正文 16.5px 明显放大 */
+  line-height:2;
   color:var(--red);
-  letter-spacing:.12em;
+  letter-spacing:.16em;
+  text-indent:.16em;
 }
+/* 恭请行的上下细金线，做出「抬头」的分隔感 */
+.letter-honor::before,
+.letter-honor::after{
+  content:"";
+  display:block;
+  width:60px; height:1px;
+  margin:0 auto;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity:.85;
+}
+.letter-honor::before{ margin-bottom:16px; }
+.letter-honor::after { margin-top:16px; }
 
 /* 落款：右对齐 */
 .signature{
-  margin-top:36px;
+  position:relative;
+  margin-top:44px;
   text-align:right;
+  padding-right:14px;
   font-family:var(--font-title);
   font-size:15.5px;
   line-height:2.1;
   color:var(--ink);
   letter-spacing:.05em;
+}
+/* 落款左侧一条淡金色竖线，更像传统柬帖 */
+.signature::before{
+  content:"";
+  position:absolute;
+  top:4px; bottom:4px; right:-6px;
+  width:1px;
+  background:linear-gradient(180deg, transparent, var(--gold) 18%, var(--gold) 82%, transparent);
+  opacity:.7;
 }
 .signature .sig-name{
   /* 印章式圆角矩形 */
@@ -322,42 +423,82 @@ body{
 }
 
 /* ============================================================
-   3. 吉时流程区
+   3. 吉时流程区：纵向时间轴
+   结构：左「时间」 —— 金色竖线（含节点圆点） —— 右「事项」
    ============================================================ */
 .timeline{
-  padding:8px 0 12px;
-  text-align:center;
+  padding:6px 0 10px;
+  max-width:380px;
+  margin:0 auto;
 }
 .tl-item{
+  display:grid;
+  grid-template-columns:1fr 30px 1fr;   /* 时间 | 轴线 | 事项 */
+  align-items:center;
+  column-gap:0;
+}
+/* 左侧：时间，右对齐靠向轴线 */
+.tl-time{
+  font-family:var(--font-body);
+  font-size:16px;
+  color:var(--red);
+  letter-spacing:.04em;
+  text-align:right;
+  padding-right:14px;
+  white-space:nowrap;
+}
+/* 中间：轴线单元（竖线 + 节点圆点） */
+.tl-axis{
+  position:relative;
+  height:72px;               /* 每个节点占的高度 */
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:14px;
-  padding:14px 0;
 }
-/* 中式竖线装饰 */
-.tl-bar{
-  width:2px; height:34px;
-  background:linear-gradient(180deg, transparent, var(--gold), transparent);
-  border-radius:2px;
-  flex:none;
+/* 贯穿的竖线；首尾用 transparent 渐隐，避免线头突兀 */
+.tl-axis::before{
+  content:"";
+  position:absolute;
+  top:0; bottom:0;
+  width:1px;
+  background:linear-gradient(180deg, transparent, var(--gold) 15%, var(--gold) 85%, transparent);
+  opacity:.9;
 }
+/* 中间的金色节点圆点 */
+.tl-axis::after{
+  content:"";
+  position:relative;
+  width:9px; height:9px;
+  border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 0 3px rgba(203,175,122,.22);
+}
+/* 右侧：事项，左对齐靠向轴线 */
 .tl-text{
   font-family:var(--font-title);
-  font-size:17px;
+  font-size:18px;
   color:var(--ink);
-  letter-spacing:.06em;
+  letter-spacing:.1em;
+  text-align:left;
+  padding-left:14px;
+  white-space:nowrap;
 }
-.tl-time{
-  color:var(--red);
+/* 事项下的小字注释 */
+.tl-note{
+  display:block;
   font-family:var(--font-body);
-  font-size:16px;
-  letter-spacing:.02em;
+  font-size:11.5px;
+  color:var(--ink-light);
+  letter-spacing:.12em;
+  margin-top:2px;
+  opacity:.9;
 }
-.tl-dot{
-  width:5px; height:5px; flex:none;
-  background:var(--gold);
-  transform:rotate(45deg);
+
+/* 小屏：收紧轴距，避免换行 */
+@media (max-width:360px){
+  .tl-item{ grid-template-columns:1fr 24px 1fr; }
+  .tl-time{ font-size:14.5px; padding-right:10px; }
+  .tl-text{ font-size:16px; padding-left:10px; }
 }
 
 /* ============================================================
@@ -519,8 +660,13 @@ body{
     <div class="cover-inner">
       <div class="cover-seal">喜 柬</div>
 
-      <!-- 【可修改】主标题：封顶大吉 / 上梁大吉 -->
-      <h1 class="cover-title">封顶大吉</h1>
+      <!-- 【可修改】主标题：封顶大吉 / 上梁大吉
+           注意：每个字必须包在 <i> 里，并给内联 --i 序号（从 0 起），
+           逐字浮现的延迟由 CSS 的 animation-delay: calc(... * var(--i)) 计算。
+           改字数时按顺序补 --i:0/1/2/3... 即可 -->
+      <h1 class="cover-title">
+        <i style="--i:0">封</i><i style="--i:1">顶</i><i style="--i:2">大</i><i style="--i:3">吉</i>
+      </h1>
       <div class="cover-title-rule"></div>
 
       <!-- 【可修改】邀请人 -->
@@ -552,7 +698,7 @@ body{
     <div class="title-rule"><i></i><b>❖</b><i></i></div>
 
     <div class="letter-body">
-      <p>伏以吉日良辰，舍下新居封顶告成。仰赖亲友关爱，工程顺遂；幸得乡邻相助，栋宇初成。谨择于农历八月廿六日（公历二〇二六年十月六日），于湖南省常宁市蓬塘乡蓬兴村皂坪龙家龙二组新宅，敬备薄酌，聊表谢忱。</p>
+      <p>伏以吉日良辰，舍下新居封顶告成。仰赖亲友关爱，工程顺遂；幸得乡邻相助，栋宇初成。谨择于农历八月廿六日（公历二〇二六年十月六日），于湖南省常宁市蓬塘乡蓬兴村新宅，敬备薄酌，聊表谢忱。</p>
       <p>是日上午九时上梁，中午十二时开席。</p>
       <p class="letter-honor">恭请 &nbsp;阖府&nbsp; 台光</p>
       <p>伏望拨冗贲临，共襄喜庆。蓬荜生辉，曷胜荣幸。</p>
@@ -578,16 +724,17 @@ body{
     <h2 class="section-title">吉 时</h2>
     <div class="title-rule"><i></i><b>❖</b><i></i></div>
 
+    <!-- 纵向时间轴：左「时间」 | 金色竖线+节点 | 右「事项」 -->
     <div class="timeline">
       <div class="tl-item">
-        <span class="tl-dot"></span>
-        <span class="tl-bar"></span>
-        <span class="tl-text"><span class="tl-time">上午 9:00</span>&nbsp;&nbsp;上梁</span>
+        <span class="tl-time">上午 9:00</span>
+        <span class="tl-axis"></span>
+        <span class="tl-text">上梁<span class="tl-note">吉时动土 · 上梁仪式</span></span>
       </div>
       <div class="tl-item">
-        <span class="tl-dot"></span>
-        <span class="tl-bar"></span>
-        <span class="tl-text"><span class="tl-time">中午 12:00</span>&nbsp;&nbsp;开席</span>
+        <span class="tl-time">中午 12:00</span>
+        <span class="tl-axis"></span>
+        <span class="tl-text">开席<span class="tl-note">敬备薄酌 · 恭候光临</span></span>
       </div>
     </div>
   </section>
@@ -596,7 +743,9 @@ body{
   <div class="divider"><span class="line"></span><span class="gem">❖</span><span class="line"></span></div>
 
   <!-- ==========================================================
-       4. 地点区
+       4. 地点区（席设）——已移除「复制地址」按钮
+       如需恢复复制功能，把下方注释掉的 <button> 取消注释，
+       并保留脚本中的复制逻辑即可（脚本已做空值保护，不会报错）
        ========================================================== -->
   <section class="section reveal" id="place">
     <h2 class="section-title">席 设</h2>
@@ -605,7 +754,7 @@ body{
     <div class="place">
       <!-- 【可修改】地址 -->
       <p class="place-addr" id="addrText">湖南省常宁市蓬塘乡蓬兴村皂坪龙家龙二组</p>
-      <button class="btn-line" id="copyBtn" type="button">复 制 地 址</button>
+      <!-- <button class="btn-line" id="copyBtn" type="button">复 制 地 址</button> -->
     </div>
   </section>
 
@@ -667,38 +816,44 @@ body{
     }, 1800);
   }
 
-  /* ---------- 3. 复制地址到剪贴板 ---------- */
+  /* ---------- 3. 复制地址到剪贴板 ----------
+     注意：地点区的「复制地址」按钮当前已从 HTML 中移除，
+     因此这里先判断元素是否存在；若按钮被恢复，逻辑自动生效。
+     -------------------------------------------------------------- */
   var copyBtn  = document.getElementById('copyBtn');
-  var addrText = document.getElementById('addrText').textContent.trim();
+  var addrEl   = document.getElementById('addrText');
+  var addrText = addrEl ? addrEl.textContent.trim() : '';
 
-  copyBtn.addEventListener('click', function () {
-    var done = function () { showToast('地址已复制'); };
-    var fallback = function () {
-      // 兼容不支持 clipboard API 的旧内核（如部分微信内置浏览器）
-      try {
-        var ta = document.createElement('textarea');
-        ta.value = addrText;
-        ta.setAttribute('readonly', '');
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        ta.style.top = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        ta.setSelectionRange(0, ta.value.length);
-        var ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-        ok ? done() : showToast('复制失败，请长按选取地址');
-      } catch (e) {
-        showToast('复制失败，请长按选取地址');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var done = function () { showToast('地址已复制'); };
+      var fallback = function () {
+        // 兼容不支持 clipboard API 的旧内核（如部分微信内置浏览器）
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = addrText;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          ta.style.top = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          ta.setSelectionRange(0, ta.value.length);
+          var ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          ok ? done() : showToast('复制失败，请长按选取地址');
+        } catch (e) {
+          showToast('复制失败，请长按选取地址');
+        }
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(addrText).then(done).catch(fallback);
+      } else {
+        fallback();
       }
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(addrText).then(done).catch(fallback);
-    } else {
-      fallback();
-    }
-  });
+    });
+  }
 
   /* ---------- 4. 背景音乐播放 / 暂停 ---------- */
   var bgm      = document.getElementById('bgm');
